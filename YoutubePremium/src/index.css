@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme Variables ─────────────────────────────────────── */
+:root {
+  --bg-base:       #0a0a0b;
+  --bg-surface:    #111113;
+  --bg-elevated:   #0d0d0f;
+  --bg-hover:      rgba(255,255,255,0.05);
+  --border:        rgba(255,255,255,0.06);
+  --text-primary:  #ffffff;
+  --text-secondary:#a1a1aa;
+  --text-muted:    #52525b;
+  --accent:        #ef4444;
+}
+
+:root.light {
+  --bg-base:       #f4f4f5;
+  --bg-surface:    #ffffff;
+  --bg-elevated:   #fafafa;
+  --bg-hover:      rgba(0,0,0,0.04);
+  --border:        rgba(0,0,0,0.08);
+  --text-primary:  #09090b;
+  --text-secondary:#52525b;
+  --text-muted:    #a1a1aa;
+  --accent:        #dc2626;
+}
+
+/* ── Apply variables ─────────────────────────────────────── */
+body {
+  background-color: var(--bg-base);
+  color:            var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Utility classes dùng CSS variables ──────────────────── */
+.bg-base       { background-color: var(--bg-base) !important; }
+.bg-surface    { background-color: var(--bg-surface) !important; }
+.bg-elevated   { background-color: var(--bg-elevated) !important; }
+.bg-hover:hover{ background-color: var(--bg-hover) !important; }
+.border-theme  { border-color: var(--border) !important; }
+.text-primary  { color: var(--text-primary) !important; }
+.text-secondary{ color: var(--text-secondary) !important; }
+.text-muted    { color: var(--text-muted) !important; }
+
+
+/* Light mode — override tất cả màu tối */
+:root.light .bg-\[\#0a0a0b\],
+:root.light .bg-\[\#0d0d0f\],
+:root.light .bg-\[\#111113\],
+:root.light .bg-\[\#141416\] {
+  background-color: var(--bg-surface) !important;
+}
+
+:root.light .text-white   { color: var(--text-primary)   !important; }
+:root.light .text-zinc-400{ color: var(--text-secondary) !important; }
+:root.light .text-zinc-500{ color: var(--text-muted)     !important; }
+:root.light .text-zinc-600{ color: var(--text-muted)     !important; }
+
+:root.light .border-white\/5,
+:root.light .border-white\/10 {
+  border-color: var(--border) !important;
+}
+
+:root.light .bg-white\/\[0\.03\],
+:root.light .bg-white\/\[0\.04\],
+:root.light .bg-white\/5 {
+  background-color: rgba(0,0,0,0.04) !important;
+}
