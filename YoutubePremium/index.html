@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0A0A0A" />
+    <title>YTB Premium — Admin Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23E53E3E'/><polygon points='38,28 75,50 38,72' fill='white'/></svg>" />
+    <style>
+      /* Reset toàn bộ */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body, #root {
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        background: #0A0A0A;
+        color: #F5F5F5;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar        { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track  { background: #0a0a0a; }
+      ::-webkit-scrollbar-thumb  { background: #333; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #E53E3E; }
+
+      /* Select option bg */
+      select option { background: #111111; color: #F5F5F5; }
+
+      /* Animations dùng chung */
+      @keyframes slideIn {
+        from { transform: translateX(40px); opacity: 0; }
+        to   { transform: translateX(0);    opacity: 1; }
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Mobile sidebar override */
+      @media (max-width: 640px) {
+        .sidebar-desktop { display: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
