@@ -1,4 +1,3 @@
-// ─── Account Types ────────────────────────────────────────────────────────────
 export const ACCOUNT_TYPES = [
   { value: "1_month",  label: "1 tháng" },
   { value: "3_months", label: "3 tháng" },
@@ -6,10 +5,9 @@ export const ACCOUNT_TYPES = [
   { value: "1_year",   label: "1 năm" },
 ];
 
-// ─── Account Status ───────────────────────────────────────────────────────────
 export const ACCOUNT_STATUS = {
   ACTIVE:   "active",
-  EXPIRING: "expiring", // <= 7 ngày
+  EXPIRING: "expiring",
   EXPIRED:  "expired",
 };
 
@@ -25,7 +23,6 @@ export const ACCOUNT_STATUS_VARIANT = {
   expired:  "danger",
 };
 
-// ─── Order Status ─────────────────────────────────────────────────────────────
 export const ORDER_STATUS = {
   PENDING:    "pending",
   PROCESSING: "processing",
@@ -50,7 +47,6 @@ export const ORDER_STATUS_VARIANT = {
   error:      "danger",
 };
 
-// ─── Customer Levels ──────────────────────────────────────────────────────────
 export const CUSTOMER_LEVELS = {
   MEMBER: "member",
   VIP:    "vip",
@@ -69,7 +65,6 @@ export const CUSTOMER_LEVEL_VARIANT = {
   agent:  "agent",
 };
 
-// ─── Roles ────────────────────────────────────────────────────────────────────
 export const ROLES = {
   SUPER_ADMIN: "super_admin",
   MANAGER:     "manager",
@@ -80,7 +75,6 @@ export const ROLE_LABEL = {
   manager:     "Manager",
 };
 
-// ─── Log Actions ──────────────────────────────────────────────────────────────
 export const LOG_ACTIONS = {
   CREATE:   "create",
   UPDATE:   "update",
@@ -90,13 +84,9 @@ export const LOG_ACTIONS = {
   LOGOUT:   "logout",
 };
 
-// ─── Expiry warning threshold (days) ─────────────────────────────────────────
 export const EXPIRY_WARNING_DAYS = 7;
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
 export const PAGE_SIZE = 20;
 
-// ─── Currency formatter ───────────────────────────────────────────────────────
 export const formatVND = (amount) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount ?? 0);
 

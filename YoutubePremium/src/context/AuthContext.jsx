@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 const AuthContext = createContext(null);
@@ -13,23 +13,28 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const initialized = useRef(false);
   const currentUserId = useRef(null);
 
   const isAllowedEmail = (email) =>
     ALLOWED_EMAILS.includes(email?.toLowerCase());
 
-  // ── Fetch Profile ──────────────────────────────────────────
   const fetchProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
+      const fetchPromise = supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .maybeSingle(); // Dùng maybeSingle để không văng lỗi nếu chưa có profile
-      
+        .maybeSingle();
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Profile fetch timeout")), 4000)
+      );
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
       setProfile(!error ? data : null);
     } catch (err) {
-      console.error("Lỗi fetch profile:", err);
+      console.warn("fetchProfile failed:", err.message);
       setProfile(null);
     }
   };
@@ -37,24 +42,25 @@ export function AuthProvider({ children }) {
   const cleanOAuthUrl = () => {
     const url = new URL(window.location.href);
     let changed = false;
+
     if (url.searchParams.has("auth_callback")) {
       url.searchParams.delete("auth_callback");
       changed = true;
     }
+
     if (window.location.hash.includes("access_token")) {
       url.hash = "";
       changed = true;
     }
+
     if (changed) window.history.replaceState({}, "", url.toString());
   };
 
-  // ── Handle Session (Hàm xử lý chính) ───────────────────────
-  const handleSession = async (session) => {
+  const applySession = async (session) => {
     try {
-      const u = session?.user ?? null;
+      const nextUser = session?.user ?? null;
 
-      // 1. Kiểm tra quyền truy cập
-      if (u && !isAllowedEmail(u.email)) {
+      if (nextUser && !isAllowedEmail(nextUser.email)) {
         alert("Email này không được cấp quyền truy cập!");
         await supabase.auth.signOut();
         setUser(null);
@@ -63,66 +69,77 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // 2. Cập nhật state user
-      setUser(u);
-      currentUserId.current = u?.id ?? null;
+      currentUserId.current = nextUser?.id ?? null;
+      setUser(nextUser);
+      setLoading(false);
 
-      // 3. Lấy profile nếu có user
-      if (u) {
-        await fetchProfile(u.id);
-      } else {
-        setProfile(null);
-      }
-    } catch (error) {
-      console.error("Lỗi xử lý session:", error);
+      if (nextUser) fetchProfile(nextUser.id);
+      else setProfile(null);
+    } catch (err) {
+      console.error("applySession error:", err);
     } finally {
-      // 4. LUÔN LUÔN tắt loading và dọn URL bất kể thành công hay thất bại
       cleanOAuthUrl();
       setLoading(false);
     }
   };
 
-  // ── Khởi tạo ───────────────────────────────────────────────
   useEffect(() => {
-    // Lấy session ngay lập tức khi load trang (để xử lý nhanh hơn event)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
-    });
+    const timeout = setTimeout(() => {
+      console.warn("Auth timeout, forcing loading off");
+      setLoading(false);
+    }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth Event:", event, session?.user?.email);
+        console.log("Auth Event:", event, session?.user?.email ?? "no user");
+        clearTimeout(timeout);
 
-        // Nếu user ID không đổi thì chỉ cần tắt loading (tránh fetch profile thừa)
-        if (session?.user?.id === currentUserId.current && event !== "SIGNED_OUT") {
+        if (!initialized.current) {
+          initialized.current = true;
+          await applySession(session);
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
+          setUser(null);
+          setProfile(null);
+          currentUserId.current = null;
           setLoading(false);
           return;
         }
 
-        await handleSession(session);
+        await applySession(session);
       }
     );
 
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!initialized.current) {
+        initialized.current = true;
+        clearTimeout(timeout);
+        applySession(session);
+      }
+    });
+
     return () => {
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
 
-  // ── Actions ────────────────────────────────────────────────
   const signInWithEmail = async (email, password) => {
     if (!isAllowedEmail(email)) {
       return { error: { message: "Email này không được cấp quyền truy cập" } };
     }
+
     return await supabase.auth.signInWithPassword({ email, password });
   };
 
   const signInWithGoogle = async () => {
-    setLoading(true);
     return await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { 
+      options: {
         redirectTo: `${window.location.origin}/?auth_callback=1`,
-        queryParams: { prompt: 'select_account' }
+        queryParams: { prompt: "select_account" },
       },
     });
   };
@@ -130,20 +147,18 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     setLoading(true);
     await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-    currentUserId.current = null;
-    setLoading(false);
   };
-
-  const isSuperAdmin = profile?.role === "super_admin";
-  const isManager    = profile?.role === "manager" || isSuperAdmin;
 
   return (
     <AuthContext.Provider value={{
-      user, profile, loading,
-      isSuperAdmin, isManager,
-      signInWithEmail, signInWithGoogle, signOut,
+      user,
+      profile,
+      loading,
+      isSuperAdmin: profile?.role === "super_admin",
+      isManager: profile?.role === "manager" || profile?.role === "super_admin",
+      signInWithEmail,
+      signInWithGoogle,
+      signOut,
       refreshProfile: () => user && fetchProfile(user.id),
     }}>
       {children}

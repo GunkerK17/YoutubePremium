@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, Play, Users, DollarSign,
-  ShoppingCart, Shield, Activity,
+  ShoppingCart, Shield, Activity, Trash2,
   ChevronLeft, ChevronRight, LogOut, Menu, X,
   Sun, Moon,
 } from 'lucide-react'
@@ -11,11 +11,12 @@ import { useAuth } from '../hooks/useAuth'
 const NAV_ITEMS = [
   { path: '/',          label: 'Dashboard',       icon: LayoutDashboard },
   { path: '/accounts',  label: 'Tài khoản YTB',   icon: Play            },
-  { path: '/customers', label: 'Khách hàng',       icon: Users           },
-  { path: '/finance',   label: 'Tài chính',        icon: DollarSign      },
-  { path: '/orders',    label: 'Đơn hàng',         icon: ShoppingCart    },
-  { path: '/security',  label: 'Bảo mật & Roles',  icon: Shield          },
-  { path: '/logs',      label: 'Activity Logs',    icon: Activity        },
+  { path: '/customers', label: 'Khách hàng',      icon: Users           },
+  { path: '/finance',   label: 'Tài chính',       icon: DollarSign      },
+  { path: '/orders',    label: 'Đơn hàng',        icon: ShoppingCart    },
+  { path: '/security',  label: 'Bảo mật & Roles', icon: Shield          },
+  { path: '/logs',      label: 'Activity Logs',   icon: Activity        },
+  { path: '/trash',     label: 'Thùng rác',       icon: Trash2          },
 ]
 
 export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme }) {
@@ -46,7 +47,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
         />
         {!collapsed && <span className="truncate">{label}</span>}
 
-        {/* Tooltip khi collapsed */}
         {collapsed && (
           <div className="absolute left-full ml-3 px-2 py-1 bg-zinc-800 border border-white/10 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
             {label}
@@ -58,8 +58,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
 
   const Content = () => (
     <div className="flex flex-col h-full">
-
-      {/* Logo */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-white/5">
         {!collapsed ? (
           <>
@@ -86,15 +84,11 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
         )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => <NavItem key={item.path} {...item} />)}
       </nav>
 
-      {/* Bottom */}
       <div className="px-2 py-3 border-t border-white/5 space-y-1">
-
-        {/* User info */}
         {!collapsed && user && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 mb-2">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-rose-700 flex items-center justify-center flex-shrink-0">
@@ -109,7 +103,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
           </div>
         )}
 
-        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-yellow-400 hover:bg-yellow-500/10 transition-all ${collapsed ? 'justify-center' : ''}`}
@@ -122,15 +115,8 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
           {!collapsed && (
             <span>{dark ? 'Chế độ sáng' : 'Chế độ tối'}</span>
           )}
-          {/* Tooltip khi collapsed */}
-          {collapsed && (
-            <div className="absolute left-full ml-3 px-2 py-1 bg-zinc-800 border border-white/10 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl transition-opacity">
-              {dark ? 'Chế độ sáng' : 'Chế độ tối'}
-            </div>
-          )}
         </button>
 
-        {/* Sign out */}
         <button
           onClick={handleSignOut}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all ${collapsed ? 'justify-center' : ''}`}
@@ -139,7 +125,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
           {!collapsed && <span>Đăng xuất</span>}
         </button>
 
-        {/* Expand khi collapsed */}
         {collapsed && (
           <button
             onClick={() => setCollapsed(false)}
@@ -154,7 +139,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
 
   return (
     <>
-      {/* Mobile toggle button */}
       <button
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-50 w-9 h-9 bg-zinc-900 border border-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white shadow-lg"
@@ -162,7 +146,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
         <Menu size={18} />
       </button>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
@@ -170,7 +153,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
         />
       )}
 
-      {/* Mobile sidebar */}
       <aside className={`lg:hidden fixed top-0 left-0 h-full w-64 bg-[#0d0d0f] border-r border-white/5 z-50 transform transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <button
           onClick={() => setMobileOpen(false)}
@@ -181,7 +163,6 @@ export default function Sidebar({ currentPath = '/', navigate, dark, toggleTheme
         <Content />
       </aside>
 
-      {/* Desktop sidebar */}
       <aside className={`hidden lg:flex flex-col h-screen sticky top-0 bg-[#0d0d0f] border-r border-white/5 transition-all duration-300 flex-shrink-0 ${collapsed ? 'w-16' : 'w-60'}`}>
         <Content />
       </aside>
