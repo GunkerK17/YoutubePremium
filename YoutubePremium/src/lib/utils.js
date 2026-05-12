@@ -105,3 +105,96 @@ export function debounce(fn, ms = 300) {
 export function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
+
+export const USD_RATE = 25500
+
+export function calcProratedUsd({
+  customerStartDate,
+  planStartDate = '2026-04-01',
+  planEndDate = '2027-04-01',
+  fullPriceUsd = 80,
+}) {
+  if (!customerStartDate) return fullPriceUsd
+
+  const start = new Date(planStartDate)
+  const end = new Date(planEndDate)
+  const customerStart = new Date(customerStartDate)
+
+  if (Number.isNaN(customerStart.getTime())) return fullPriceUsd
+
+  // Nếu mua trước hoặc đúng ngày mở gói thì tính full
+  if (customerStart <= start) return fullPriceUsd
+
+  // Nếu mua sau ngày hết hạn thì 0
+  if (customerStart >= end) return 0
+
+  const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24))
+  const remainDays = Math.ceil((end - customerStart) / (1000 * 60 * 60 * 24))
+
+  const price = (fullPriceUsd * remainDays) / totalDays
+
+  return Math.round(price * 100) / 100
+}
+
+export function calcProratedVnd({
+  customerStartDate,
+  planStartDate = '2026-04-01',
+  planEndDate = '2027-04-01',
+  fullPriceUsd = 80,
+  usdRate = USD_RATE,
+}) {
+  const usd = calcProratedUsd({
+    customerStartDate,
+    planStartDate,
+    planEndDate,
+    fullPriceUsd,
+  })
+
+  return Math.round(usd * usdRate)
+}
+
+export function dateToInputVN(value) {
+  if (!value) return ""
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+
+  const dd = String(date.getDate()).padStart(2, "0")
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const yyyy = date.getFullYear()
+
+  return `${dd}/${mm}/${yyyy}`
+}
+
+export function vnDateToISO(value) {
+  if (!value) return ""
+
+  const raw = String(value).trim()
+
+  // Nếu đã là yyyy-mm-dd thì giữ nguyên
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+
+  // Nhận dd/mm/yyyy hoặc dd-mm-yyyy
+  const match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+  if (!match) return ""
+
+  const [, d, m, y] = match
+  const dd = String(d).padStart(2, "0")
+  const mm = String(m).padStart(2, "0")
+
+  return `${y}-${mm}-${dd}`
+}
+
+export function isoDateToVN(value) {
+  if (!value) return ""
+
+  const raw = String(value).trim()
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw
+
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return ""
+
+  const [, y, m, d] = match
+  return `${d}/${m}/${y}`
+}
