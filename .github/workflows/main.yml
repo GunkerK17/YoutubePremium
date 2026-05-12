@@ -19,6 +19,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./YoutubePremium
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +32,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-        
           
       - name: Install dependencies
         run: npm i
@@ -41,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './YoutubePremium/dist'
           
       - name: Deploy to GitHub Pages
         id: deployment
