@@ -135,10 +135,15 @@ export function AuthProvider({ children }) {
   };
 
   const signInWithGoogle = async () => {
+    const basePath = import.meta.env.BASE_URL || "/";
+    const normalizedBasePath = basePath.endsWith("/")
+      ? basePath
+      : `${basePath}/`;
+
     return await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/?auth_callback=1`,
+        redirectTo: `${window.location.origin}${normalizedBasePath}?auth_callback=1`,
         queryParams: { prompt: "select_account" },
       },
     });
