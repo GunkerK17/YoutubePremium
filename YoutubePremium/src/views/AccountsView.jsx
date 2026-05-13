@@ -172,11 +172,36 @@ function isoDateToVN(value) {
 function vnDateToISO(value) {
   if (!value) return "";
   const raw = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split("-").map(Number);
+    const parsed = new Date(raw);
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getUTCFullYear() !== y ||
+      parsed.getUTCMonth() + 1 !== m ||
+      parsed.getUTCDate() !== d
+    ) {
+      return "";
+    }
+    return raw;
+  }
   const match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
   if (!match) return "";
-  const [, d, m, y] = match;
-  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const [, dRaw, mRaw, yRaw] = match;
+  const dd = String(dRaw).padStart(2, "0");
+  const mm = String(mRaw).padStart(2, "0");
+  const yyyy = String(yRaw);
+  const iso = `${yyyy}-${mm}-${dd}`;
+  const parsed = new Date(iso);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== Number(yyyy) ||
+    parsed.getUTCMonth() + 1 !== Number(mm) ||
+    parsed.getUTCDate() !== Number(dd)
+  ) {
+    return "";
+  }
+  return iso;
 }
 
 function calcCustomerUsd(customerStartDate, customerExpiryDate = DEFAULT_CUSTOMER_EXPIRY) {

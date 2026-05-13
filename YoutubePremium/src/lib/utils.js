@@ -2,7 +2,9 @@ import { ACCOUNT_STATUS, EXPIRY_WARNING_DAYS } from "./constants";
 
 export function daysUntil(dateStr) {
   if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return null;
+  const diff = date - new Date();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
@@ -16,12 +18,16 @@ export function resolveStatus(expiryDate) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("vi-VN");
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("vi-VN");
 }
 
 export function formatDateTime(dateStr) {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString("vi-VN", {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -32,6 +38,7 @@ export function formatDateTime(dateStr) {
 
 export function addMonths(date, months) {
   const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "";
   d.setMonth(d.getMonth() + months);
   return d.toISOString().split("T")[0];
 }
@@ -172,17 +179,41 @@ export function vnDateToISO(value) {
   const raw = String(value).trim()
 
   // Nếu đã là yyyy-mm-dd thì giữ nguyên
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split("-").map(Number)
+    const parsed = new Date(raw)
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getUTCFullYear() !== y ||
+      parsed.getUTCMonth() + 1 !== m ||
+      parsed.getUTCDate() !== d
+    ) {
+      return ""
+    }
+    return raw
+  }
 
   // Nhận dd/mm/yyyy hoặc dd-mm-yyyy
   const match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
   if (!match) return ""
 
-  const [, d, m, y] = match
-  const dd = String(d).padStart(2, "0")
-  const mm = String(m).padStart(2, "0")
+  const [, dRaw, mRaw, yRaw] = match
+  const dd = String(dRaw).padStart(2, "0")
+  const mm = String(mRaw).padStart(2, "0")
+  const yyyy = String(yRaw)
+  const iso = `${yyyy}-${mm}-${dd}`
+  const parsed = new Date(iso)
 
-  return `${y}-${mm}-${dd}`
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getUTCFullYear() !== Number(yyyy) ||
+    parsed.getUTCMonth() + 1 !== Number(mm) ||
+    parsed.getUTCDate() !== Number(dd)
+  ) {
+    return ""
+  }
+
+  return iso
 }
 
 export function isoDateToVN(value) {
