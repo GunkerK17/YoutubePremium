@@ -19,6 +19,7 @@ import {
   Check,
   Phone,
   ArrowRight,
+  Plus,
 } from "lucide-react";
 
 import { customerService } from "../services/customerService";
@@ -466,6 +467,127 @@ function Field({ label, children }) {
       </label>
       {children}
     </div>
+  );
+}
+
+const EMPTY_CUSTOMER_FORM = {
+  name: "",
+  gmail: "",
+  phone: "",
+  level: "member",
+  note: "",
+};
+
+function AddCustomerModal({ open, onClose, onSubmit, loading }) {
+  const [form, setForm] = useState(EMPTY_CUSTOMER_FORM);
+
+  useEffect(() => {
+    if (open) setForm(EMPTY_CUSTOMER_FORM);
+  }, [open]);
+
+  const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <Modal open={open} onClose={onClose} title="Thêm khách hàng mới" width={560}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <Field label="Tên khách">
+          <input
+            value={form.name}
+            onChange={(event) => set("name", event.target.value)}
+            style={inputStyle}
+            placeholder="Nhập tên khách"
+            autoFocus
+          />
+        </Field>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Gmail">
+            <input
+              value={form.gmail}
+              onChange={(event) => set("gmail", event.target.value)}
+              style={inputStyle}
+              placeholder="email@gmail.com"
+            />
+          </Field>
+
+          <Field label="SĐT / Liên hệ">
+            <input
+              value={form.phone}
+              onChange={(event) => set("phone", event.target.value)}
+              style={inputStyle}
+              placeholder="SĐT, Zalo, Facebook..."
+            />
+          </Field>
+        </div>
+
+        <Field label="Cấp độ">
+          <select
+            value={form.level}
+            onChange={(event) => set("level", event.target.value)}
+            style={{ ...inputStyle, cursor: "pointer" }}
+          >
+            <option value="member">Member</option>
+            <option value="vip">VIP</option>
+            <option value="agent">Đại lý</option>
+          </select>
+        </Field>
+
+        <Field label="Ghi chú">
+          <textarea
+            value={form.note}
+            onChange={(event) => set("note", event.target.value)}
+            style={{ ...inputStyle, minHeight: 100, resize: "vertical", lineHeight: 1.6 }}
+            placeholder="Ghi chú riêng cho khách..."
+          />
+        </Field>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 10,
+            paddingTop: 10,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <button onClick={onClose} type="button" style={{
+            padding: "9px 18px",
+            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: "transparent",
+            color: "#a1a1aa",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 800,
+          }}>
+            Huỷ
+          </button>
+
+          <button
+            onClick={() => onSubmit(form)}
+            disabled={loading || !form.name.trim()}
+            type="button"
+            style={{
+              padding: "9px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: loading ? "#7f1d1d" : "linear-gradient(135deg,#ef4444,#dc2626)",
+              color: "#fff",
+              cursor: loading || !form.name.trim() ? "not-allowed" : "pointer",
+              fontSize: 13,
+              fontWeight: 900,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              opacity: !form.name.trim() ? 0.55 : 1,
+            }}
+          >
+            {loading ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
+            Lưu khách
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -1077,6 +1199,7 @@ function CustomerDrawer({
 
 export default function CustomersView({ toast, navigate }) {
   const [accounts, setAccounts] = useState([]);
+  const [standaloneCustomers, setStandaloneCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
@@ -1088,16 +1211,25 @@ export default function CustomersView({ toast, navigate }) {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [editAccount, setEditAccount] = useState(null);
   const [supportData, setSupportData] = useState(null);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
 
     try {
-      const { data, error } = await customerService.getFromAccounts();
+      const [
+        { data: accountRows, error: accountError },
+        { data: customerRows, error: customerError },
+      ] = await Promise.all([
+        customerService.getFromAccounts(),
+        customerService.getAll({ pageSize: 1000 }),
+      ]);
 
-      if (error) throw error;
+      if (accountError) throw accountError;
+      if (customerError) throw customerError;
 
-      setAccounts(data ?? []);
+      setAccounts(accountRows ?? []);
+      setStandaloneCustomers(customerRows ?? []);
     } catch (err) {
       toast?.error("Lỗi tải khách hàng: " + err.message);
     } finally {
@@ -1128,6 +1260,37 @@ export default function CustomersView({ toast, navigate }) {
   const customers = useMemo(() => {
     const map = new Map();
 
+    standaloneCustomers
+      .filter((customer) => customer.name && customer.name.trim())
+      .forEach((row) => {
+        const key = normalizeText(row.name);
+
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            sourceCustomerId: row.id,
+            name: row.name.trim(),
+            accounts: [],
+            totalAccounts: 0,
+            activeAccounts: 0,
+
+            totalPaid: 0,
+            totalPaidUsd: 0,
+            totalCost: 0,
+            realProfit: 0,
+
+            nearestExpiry: null,
+            nearestSourceExpiry: null,
+            lastPurchase: null,
+            contact: row.phone || row.gmail || "",
+            gmail: row.gmail || "",
+            phone: row.phone || "",
+            level: row.level || "member",
+            note: row.note || "",
+          });
+        }
+      });
+
     accounts
       .filter((account) => account.customer_name && account.customer_name.trim())
       .forEach((account) => {
@@ -1150,6 +1313,10 @@ export default function CustomersView({ toast, navigate }) {
             nearestSourceExpiry: null,
             lastPurchase: null,
             contact: account.customer_contact || "",
+            gmail: "",
+            phone: "",
+            level: "member",
+            note: "",
           });
         }
 
@@ -1215,7 +1382,7 @@ export default function CustomersView({ toast, navigate }) {
         }),
       }))
       .sort((a, b) => b.totalPaid - a.totalPaid);
-  }, [accounts]);
+  }, [accounts, standaloneCustomers]);
     const filteredCustomers = useMemo(() => {
     const q = normalizeText(search);
 
@@ -1224,6 +1391,10 @@ export default function CustomersView({ toast, navigate }) {
     return customers.filter((customer) => {
       const matchName = normalizeText(customer.name).includes(q);
       const matchContact = normalizeText(customer.contact).includes(q);
+      const matchStandalone =
+        normalizeText(customer.gmail).includes(q) ||
+        normalizeText(customer.phone).includes(q) ||
+        normalizeText(customer.note).includes(q);
 
       const matchAccount = customer.accounts.some((account) => {
         return (
@@ -1234,7 +1405,7 @@ export default function CustomersView({ toast, navigate }) {
         );
       });
 
-      return matchName || matchContact || matchAccount;
+      return matchName || matchContact || matchStandalone || matchAccount;
     });
   }, [customers, search]);
 
@@ -1265,6 +1436,31 @@ export default function CustomersView({ toast, navigate }) {
     await fetchAccounts();
     setRefreshing(false);
     toast?.success("Đã cập nhật danh sách khách!");
+  };
+
+  const handleAddCustomer = async (form) => {
+    setFormLoading(true);
+
+    try {
+      const payload = {
+        name: form.name.trim(),
+        gmail: form.gmail.trim() || null,
+        phone: form.phone.trim() || null,
+        level: form.level || "member",
+        note: form.note.trim() || null,
+      };
+
+      const { error } = await customerService.create(payload);
+      if (error) throw error;
+
+      toast?.success("Đã thêm khách hàng mới!");
+      setShowAddCustomer(false);
+      await fetchAccounts();
+    } catch (err) {
+      toast?.error(err.message);
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const handleSaveEditAccount = async (form) => {
@@ -1358,6 +1554,27 @@ export default function CustomersView({ toast, navigate }) {
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            onClick={() => setShowAddCustomer(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: "linear-gradient(135deg,#ef4444,#dc2626)",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 900,
+              boxShadow: "0 4px 16px rgba(239,68,68,0.25)",
+            }}
+          >
+            <Plus size={14} />
+            Thêm khách
+          </button>
+
           <button
             onClick={() => setMoneyMode((mode) => (mode === "vnd" ? "usd" : "vnd"))}
             style={{
@@ -1756,6 +1973,13 @@ export default function CustomersView({ toast, navigate }) {
           </table>
         </div>
       </div>
+
+      <AddCustomerModal
+        open={showAddCustomer}
+        onClose={() => setShowAddCustomer(false)}
+        onSubmit={handleAddCustomer}
+        loading={formLoading}
+      />
 
       <CustomerDrawer
         customer={selectedCustomerLive}
