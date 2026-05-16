@@ -16,6 +16,10 @@ const cleanPayload = (payload) => {
   if ("cost_price" in next) next.cost_price = Number(next.cost_price) || 0;
   if ("sell_price" in next) next.sell_price = Number(next.sell_price) || 0;
   if ("customer_paid" in next) next.customer_paid = Number(next.customer_paid) || 0;
+  if ("customer_paid_usd" in next)
+    next.customer_paid_usd = Number(next.customer_paid_usd) || 0;
+  if ("customer_usd_rate" in next)
+    next.customer_usd_rate = Number(next.customer_usd_rate) || 25500;
 
   // Empty string date -> null để Supabase không lỗi date
   [
